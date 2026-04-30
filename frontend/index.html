@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitBuddy-Fitness Tracker</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- Welcome Popup -->
+<div id="welcome-popup" class="welcome-popup">
+  <div class="welcome-box">
+    <h2>Login / Signup to Save Your Progress</h2>
+    <p>Track workouts and meals permanently.</p>
+
+    <div class="welcome-buttons">
+      <button class="btn btn-primary" onclick="openWelcomeLogin()">Login</button>
+      <button class="btn btn-primary" onclick="openWelcomeSignup()">Signup</button>
+      <button class="btn btn-ghost" onclick="skipWelcomePopup()">Skip</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL OVERLAY -->
+<div id="modal-overlay"></div>
+
+<!-- MODAL: Login / Signup -->
+<div class="modal" id="modal-auth">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title" id="auth-modal-title">🔐 Login</div>
+      <div class="modal-sub" id="auth-modal-sub">Sign in to sync your fitness data</div>
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-auth')">✕</button>
+  </div>
+
+  <div id="auth-tabs" style="display:flex;gap:4px;background:var(--bg);border-radius:8px;padding:4px;margin-bottom:18px">
+    <button class="tool-tab active" id="tab-login-btn"  onclick="switchAuthTab('login')">Login</button>
+    <button class="tool-tab"        id="tab-signup-btn" onclick="switchAuthTab('signup')">Sign Up</button>
+  </div>
+  
+  
+  <!-- Login Form -->
+  <div id="auth-login-form">
+    <div id="auth-login-form-error" class="auth-error"></div>
+    <label class="modal-label">Email *</label>
+    <input class="modal-input" type="email"    id="login-email"    placeholder="you@example.com" />
+    <label class="modal-label">Password *</label>
+    <input class="modal-input" type="password" id="login-password" placeholder="••••••••" />
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="closeModal('modal-auth')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitLogin()">Login →</button>
+    </div>
+  </div>
+
+  <!-- Signup Form -->
+  <div id="auth-signup-form" style="display:none">
+    <div id="auth-signup-form-error" class="auth-error"></div>
+    <label class="modal-label">Full Name *</label>
+    <input class="modal-input" type="text"     id="signup-name"     placeholder="John Doe" />
+    <label class="modal-label">Email *</label>
+    <input class="modal-input" type="email"    id="signup-email"    placeholder="you@example.com" />
+    <label class="modal-label">Password *</label>
+    <input class="modal-input" type="password" id="signup-password" placeholder="Min 6 characters" />
+    <label class="modal-label">Confirm Password *</label>
+    <input class="modal-input" type="password" id="signup-confirm"  placeholder="Repeat password" />
+    <div class="modal-actions">
+      <button class="btn btn-ghost"   onclick="closeModal('modal-auth')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitSignup()">Create Account →</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Add Food -->
+<div class="modal" id="modal-food">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">🍎 Add Food to Library</div>
+      <div class="modal-sub">Save a food item for quick logging</div>
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-food')">✕</button>
+  </div>
+  <label class="modal-label">Food Name *</label>
+  <input class="modal-input" type="text" id="modal-food-name" placeholder="e.g., Chicken Breast, Oats" />
+  <label class="modal-label">Portion Size</label>
+  <input class="modal-input" type="text" id="modal-food-portion" placeholder="e.g., 100g, 1 cup" />
+  <div class="modal-row" style="margin-bottom:0">
+    <div>
+      <label class="modal-label">Calories *</label>
+      <input class="modal-input" type="number" id="modal-food-cal" placeholder="e.g., 165" min="0" />
+    </div>
+    <div>
+      <label class="modal-label">Protein (g)</label>
+      <input class="modal-input" type="number" id="modal-food-protein" placeholder="e.g., 31" min="0" />
+    </div>
+  </div>
+  <div class="modal-row">
+    <div>
+      <label class="modal-label">Carbs (g)</label>
+      <input class="modal-input" type="number" id="modal-food-carbs" placeholder="e.g., 20" min="0" />
+    </div>
+    <div>
+      <label class="modal-label">Fats (g)</label>
+      <input class="modal-input" type="number" id="modal-food-fats" placeholder="e.g., 5" min="0" />
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-ghost" onclick="closeModal('modal-food')">Cancel</button>
+    <button class="btn btn-primary" onclick="submitAddFood()">Add Food</button>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <h1>FitBuddy-Fitness Tracker</h1>
+      <p>Track your workouts and nutrition in one place</p>
+    </div>
+    <div class="header-actions">
+      <div id="user-info" style="display:none" class="user-pill">
+        <span class="user-avatar" id="user-avatar">U</span>
+        <span id="user-name-display">User</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
+      <button id="login-btn" class="btn-login" onclick="openAuthModal()">🔐 Login</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nav -->
+<div class="container">
+  <nav class="nav">
+    <button class="nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="nav-btn" data-tab="workouts"  onclick="switchTab('workouts')">💪 Workouts</button>
+    <button class="nav-btn" data-tab="nutrition" onclick="switchTab('nutrition')">🥗 Nutrition</button>
+    <button class="nav-btn" data-tab="tools"     onclick="switchTab('tools')">🔧 Tools</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-label">Today's Workouts</span><span class="stat-icon">💪</span></div>
+        <div class="stat-value" id="stat-workouts">0</div>
+        <div class="stat-desc">exercises logged</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-label">Today's Calories</span><span class="stat-icon">🔥</span></div>
+        <div class="stat-value" id="stat-calories">0</div>
+        <div class="stat-desc">of <span id="goal-display">3000</span> goal</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-label">Total Volume</span><span class="stat-icon">🏋️</span></div>
+        <div class="stat-value" id="stat-volume">0</div>
+        <div class="stat-desc">lbs lifted today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-label">Current Streak</span><span class="stat-icon">🔥</span></div>
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-desc">days logging food &amp; gym</div>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Weekly Calorie Intake</div>
+        <div class="card-sub">Last 7 days</div>
+        <div class="chart-wrap"><canvas id="calChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Workout Frequency</div>
+        <div class="card-sub">Last 7 days</div>
+        <div class="chart-wrap"><canvas id="freqChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Protein Progress Bar (Dashboard) -->
+    <div class="card" style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div>
+          <div class="card-title">Today's Protein</div>
+          <div class="card-sub" id="dash-prot-count">0 / 150g protein</div>
+        </div>
+        <span class="prot-badge" id="dash-prot-pct" style="font-size:0.82rem">0%</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar progress-bar-prot" id="dash-prot-bar" style="width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.76rem;color:var(--muted);margin-top:6px">
+        <span id="dash-prot-taken">0g taken</span>
+        <span id="dash-prot-remaining">Goal: 150g</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Weekly Summary</div>
+      <div class="card-sub">Your performance this week</div>
+      <table class="summary-table">
+        <tr><td>Total Workouts</td><td class="val-blue"   id="sum-workouts">0</td></tr>
+        <tr><td>Total Calories</td><td class="val-orange" id="sum-calories">0</td></tr>
+        <tr><td>Average Daily Calories</td><td class="val-green" id="sum-avg-cal">0</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- WORKOUTS -->
+  <div id="tab-workouts" class="tab-content">
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Log Workout</div>
+        <div class="card-sub">Add a new exercise to your workout log</div>
+        <div style="margin-top:16px">
+          <div class="form-group">
+            <label class="form-label">Exercise</label>
+            <input class="form-input" type="text" id="ex-name" placeholder="e.g., Bench Press, Squats" />
+          </div>
+          <div class="three-col" style="margin-bottom:16px">
+            <div><label class="form-label">Sets</label>
+              <input class="form-input" type="number" id="ex-sets" value="3" min="1" /></div>
+            <div><label class="form-label">Reps</label>
+              <input class="form-input" type="number" id="ex-reps" value="10" min="1" /></div>
+            <div><label class="form-label">Weight (lbs)</label>
+              <input class="form-input" type="number" id="ex-weight" value="135" min="0" /></div>
+          </div>
+          <button class="btn btn-primary" onclick="addWorkout()">+ Add Exercise</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Today's Workouts</div>
+        <div class="card-sub">exercises logged today</div>
+        <div id="today-workouts" style="margin-top:14px">
+          <div class="empty">No workouts logged today</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-header">
+        <div>
+          <div class="card-title">Exercise Library</div>
+          <div class="card-sub">Click "Use" to fill the form</div>
+        </div>
+      </div>
+      <input class="form-input" type="text" id="exercise-search"
+             placeholder="🔍 Search exercises..."
+             style="margin-top:12px;margin-bottom:8px" />
+      <div class="filter-row">
+        <!-- Filters will be dynamically generated from exercise body parts -->
+      </div>
+      <div id="exercise-library" class="exercise-library-scroll">
+        <div class="empty">No saved exercises yet.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Workout History</div>
+      <div class="card-sub">Your recent workout activity</div>
+      <div id="workout-history" style="margin-top:14px">
+        <div class="empty">No workout history yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUTRITION -->
+
+  
+  <div id="tab-nutrition" class="tab-content">
+
+    <!-- Settings Row 1: Calorie Goal + Protein Goal -->
+    <div class="two-col" style="margin-bottom:10px">
+      <div class="card">
+        <div class="card-title">⚙️ Daily Calorie Goal</div>
+        <div class="card-sub">Customize your calorie target</div>
+        <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+          <input class="form-input" type="number" id="calorie-goal-input" value="3000" min="0" style="flex:1;margin-bottom:0" />
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap;padding:10px 16px" onclick="updateGoal()">Update</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🥩 Daily Protein Goal</div>
+        <div class="card-sub">Customize your protein target</div>
+        <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+          <input class="form-input" type="number" id="protein-goal-input" value="150" min="0" style="flex:1;margin-bottom:0" />
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap;padding:10px 16px" onclick="updateProteinGoal()">Update</button>
+        </div>
+      </div>
+    </div>
+    <!-- Settings Row 2: Carbs Goal + Fats Goal -->
+    <div class="two-col" style="margin-bottom:14px">
+      <div class="card">
+        <div class="card-title">🌾 Daily Carbs Goal</div>
+        <div class="card-sub">Customize your carbs target</div>
+        <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+          <input class="form-input" type="number" id="carbs-goal-input" value="250" min="0" style="flex:1;margin-bottom:0" />
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap;padding:10px 16px" onclick="updateCarbsGoal()">Update</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🥑 Daily Fats Goal</div>
+        <div class="card-sub">Customize your fats target</div>
+        <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+          <input class="form-input" type="number" id="fats-goal-input" value="65" min="0" style="flex:1;margin-bottom:0" />
+          <button class="btn btn-primary" style="width:auto;white-space:nowrap;padding:10px 16px" onclick="updateFatsGoal()">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-title">Log Meal</div>
+        <div class="card-sub">Track your calorie &amp; protein intake</div>
+        <div style="margin-top:16px">
+          <div class="form-group">
+            <label class="form-label">Meal / Food</label>
+            <input class="form-input" type="text" id="meal-name" placeholder="e.g., Chicken Salad" />
+          </div>
+          <div class="two-col" style="margin-bottom:8px;gap:8px">
+            <div><label class="form-label">Calories</label>
+              <input class="form-input" type="number" id="meal-cal" placeholder="350" min="0" /></div>
+            <div><label class="form-label">Protein (g)</label>
+              <input class="form-input" type="number" id="meal-protein" placeholder="25" min="0" /></div>
+          </div>
+          <div class="two-col" style="margin-bottom:16px;gap:8px">
+            <div><label class="form-label">Carbs (g)</label>
+              <input class="form-input" type="number" id="meal-carbs" placeholder="40" min="0" /></div>
+            <div><label class="form-label">Fats (g)</label>
+              <input class="form-input" type="number" id="meal-fats" placeholder="10" min="0" /></div>
+          </div>
+          <button class="btn btn-primary" onclick="addMeal()">+ Add Meal</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Today's Progress</div>
+        <div class="card-sub">Calories, protein, carbs &amp; fats</div>
+
+        <!-- Calories bar -->
+        <div style="margin-top:14px">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:5px">
+            <span style="font-weight:600;color:var(--text)">🔥 Calories</span>
+            <span id="today-cal-count" style="color:var(--muted);font-weight:500">0 / 3000 cal</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar" id="cal-progress-bar" style="width:0%"></div>
+          </div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:3px;text-align:right" id="cal-progress-pct">0 cal consumed</div>
+        </div>
+
+        <!-- Protein bar -->
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:5px">
+            <span style="font-weight:600;color:var(--accent-blue)">💪 Protein</span>
+            <span id="today-prot-count" style="color:var(--muted);font-weight:500">0 / 150g</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar progress-bar-prot" id="prot-progress-bar" style="width:0%"></div>
+          </div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:3px;text-align:right" id="prot-progress-amt">0g consumed</div>
+        </div>
+
+        <!-- Carbs bar -->
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:5px">
+            <span style="font-weight:600;color:#d97706">🌾 Carbs</span>
+            <span id="today-carbs-count" style="color:var(--muted);font-weight:500">0 / 250g</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar progress-bar-carbs" id="carbs-progress-bar" style="width:0%"></div>
+          </div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:3px;text-align:right" id="carbs-progress-amt">0g consumed</div>
+        </div>
+
+        <!-- Fats bar -->
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:5px">
+            <span style="font-weight:600;color:var(--accent-orange)">🥑 Fats</span>
+            <span id="today-fats-count" style="color:var(--muted);font-weight:500">0 / 65g</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar progress-bar-fats" id="fats-progress-bar" style="width:0%"></div>
+          </div>
+          <div style="font-size:0.74rem;color:var(--muted);margin-top:3px;text-align:right" id="fats-progress-amt">0g consumed</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change 1: Full-width Today's Meals section -->
+    
+
+    <div class="card" style="margin-bottom:14px">
+      <div class="section-header">
+        <div>
+          <div class="card-title">Food Library</div>
+          <div class="card-sub">Search foods to auto-fill the log form</div>
+        </div>
+        <button class="btn btn-sm btn-primary" style="width:auto" onclick="addFoodToLib()">+ Add Food</button>
+      </div>
+      <!-- 1 row (4 cards) shown by default; search reveals more -->
+      <input class="form-input" type="text" id="food-search"
+             placeholder="🔍 Search foods to see more..."
+             style="margin-top:12px;margin-bottom:0" />
+      <div class="food-grid" id="food-grid"></div>
+    </div>
+
+    <div class="card" style="margin-top:14px;margin-bottom:14px">
+      <div class="card-title">Today's Meals</div>
+      <div class="card-sub">All meals logged today</div>
+      <div id="today-meals" style="margin-top:14px">
+        <div class="empty">No meals logged today</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Meal History</div>
+      <div class="card-sub">Your recent nutrition log</div>
+      <div id="meal-history" style="margin-top:14px">
+        <div class="empty">No meal history yet</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- TOOLS -->
+  <div id="tab-tools" class="tab-content">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-title">Health &amp; Fitness Tools</div>
+      <div class="card-sub">Calculate various health metrics — powered by Java backend</div>
+      <div class="tool-tabs" style="margin-top:16px">
+        <button class="tool-tab active" data-tool="bmi"     onclick="switchTool('bmi')">⚖️ BMI</button>
+        <button class="tool-tab"        data-tool="tdee"    onclick="switchTool('tdee')">🔥 TDEE</button>
+        <button class="tool-tab"        data-tool="bodyfat" onclick="switchTool('bodyfat')">💪 Body Fat</button>
+        <button class="tool-tab"        data-tool="water"   onclick="switchTool('water')">💧 Water</button>
+      </div>
+
+      <div id="tool-bmi" class="tool-panel active">
+        <div style="margin:8px 0 14px">
+          <strong style="font-family:'Space Grotesk',sans-serif">BMI Calculator</strong>
+          <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Calculate your Body Mass Index</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Height (cm)</label>
+          <input class="form-input" type="number" id="bmi-height" value="175" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weight (kg)</label>
+          <input class="form-input" type="number" id="bmi-weight" value="70" />
+        </div>
+        <button class="btn btn-primary" onclick="calcBMI()">Calculate BMI</button>
+        <div class="result-box" id="bmi-result" style="display:none"></div>
+      </div>
+
+      <div id="tool-tdee" class="tool-panel">
+        <div style="margin:8px 0 14px">
+          <strong style="font-family:'Space Grotesk',sans-serif">TDEE Calculator</strong>
+          <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Total Daily Energy Expenditure</div>
+        </div>
+        <div class="three-col" style="margin-bottom:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Age</label>
+            <input class="form-input" type="number" id="tdee-age" placeholder="25" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Weight (kg)</label>
+            <input class="form-input" type="number" id="tdee-weight" placeholder="70" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Height (cm)</label>
+            <input class="form-input" type="number" id="tdee-height" placeholder="175" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-input" id="tdee-gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Activity Level</label>
+          <select class="form-input" id="tdee-activity">
+            <option value="1.2">Sedentary (little/no exercise)</option>
+            <option value="1.375">Lightly active (1-3 days/week)</option>
+            <option value="1.55" selected>Moderately active (3-5 days/week)</option>
+            <option value="1.725">Very active (6-7 days/week)</option>
+            <option value="1.9">Super active (physical job)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="calcTDEE()">Calculate TDEE</button>
+        <div class="result-box" id="tdee-result" style="display:none"></div>
+      </div>
+
+      <div id="tool-bodyfat" class="tool-panel">
+        <div style="margin:8px 0 14px">
+          <strong style="font-family:'Space Grotesk',sans-serif">Body Fat % (Navy Method)</strong>
+          <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">All measurements in centimetres</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-input" id="bf-gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+        <div class="three-col" style="margin-bottom:10px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Neck (cm)</label>
+            <input class="form-input" type="number" id="bf-neck" placeholder="38" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Waist (cm)</label>
+            <input class="form-input" type="number" id="bf-waist" placeholder="85" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Hip (cm, ♀)</label>
+            <input class="form-input" type="number" id="bf-hip" placeholder="95" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Height (cm)</label>
+          <input class="form-input" type="number" id="bf-height" placeholder="175" />
+        </div>
+        <button class="btn btn-primary" onclick="calcBodyFat()">Calculate Body Fat</button>
+        <div class="result-box" id="bf-result" style="display:none"></div>
+      </div>
+
+      <div id="tool-water" class="tool-panel">
+        <div style="margin:8px 0 14px">
+          <strong style="font-family:'Space Grotesk',sans-serif">Water Intake Calculator</strong>
+          <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Daily hydration recommendation</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Weight (kg)</label>
+          <input class="form-input" type="number" id="water-weight" placeholder="70" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Activity Level</label>
+          <select class="form-input" id="water-activity">
+            <option value="low">Low (sedentary)</option>
+            <option value="moderate" selected>Moderate (3-5 days/week)</option>
+            <option value="high">High (daily intense training)</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="calcWater()">Calculate Water</button>
+        <div class="result-box" id="water-result" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-title">🥗 Nutrition Tips</div>
+        <ul>
+          <li>Eat protein with every meal for muscle recovery</li>
+          <li>Stay hydrated throughout the day</li>
+          <li>Eat whole foods and limit processed items</li>
+          <li>Plan your meals to meet calorie goals</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <div class="tip-title">🏋️ Workout Tips</div>
+        <ul>
+          <li>Progressive overload is key to growth</li>
+          <li>Rest days are essential for recovery</li>
+          <li>Focus on compound movements first</li>
+          <li>Track your progress consistently</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
